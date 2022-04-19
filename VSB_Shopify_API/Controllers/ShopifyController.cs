@@ -19,9 +19,9 @@ namespace VSB_Shopify_API
         string ws_type = ConfigurationManager.AppSettings["WSTYPE"];
         string country_sw = ConfigurationManager.AppSettings["COUNTRY_SW"];
         string access_token = "?access_token=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";
+        string url = "https://up-bookmarks.myshopify.com/admin/api/2022-04/";
 
         ws_functions wsf = new ws_functions();
-
 
         DataTable dt = new DataTable();
         base_return ret_obj = new base_return();
@@ -65,7 +65,61 @@ namespace VSB_Shopify_API
                 ret_obj = wsf.process_orders(item_details, country_sw);
             }
 
+            return ret_obj;
+        }
 
+        // Sync Products from Shopify
+        [System.Web.Http.Route("Sync_Products/")]
+        public base_return POST_Products()
+        {
+            //Instatiate Variables
+            List<product_template.products> item_details = new List<product_template.products>();
+            JsonResult json_return = new JsonResult();
+
+            string return_value = "Success";
+            string sql_script;
+            string sql_check;
+
+            string endpoint = "products.json";
+            string count_endpoint = "products/count.json";
+            string extra_info = "&index=";
+
+            //Build Count URL
+            string full_url = url + count_endpoint + access_token;
+
+            //Check amount of items
+            ret_obj = wsf.get_webrequest(full_url);
+
+            int product_count = 0;
+            int total_index = 0;
+            var product_counter = ret_obj.message.Substring(9, ret_obj.message.Length - 10);
+
+            try
+            {
+                product_count = int.Parse(product_counter);
+                total_index = product_count / 50;
+            }
+            catch (Exception ex)
+            {
+                //audit error
+            }
+
+            //build index amount
+            for (int i = 0; i < total_index; i++)
+            {
+                //Build Count URL
+                full_url = url + endpoint + access_token + extra_info + i;
+                ret_obj = wsf.get_webrequest(full_url);
+
+                if (ret_obj.status == 0)
+                {
+                    //Convert Json to list of orders
+                    item_details = JsonConvert.DeserializeObject<product_template.RootObject>(ret_obj.message).product_list.ToList();
+                }
+
+                //process products in batches
+                ret_obj = wsf.process_products(item_details, country_sw);
+            }
 
             return ret_obj;
         }

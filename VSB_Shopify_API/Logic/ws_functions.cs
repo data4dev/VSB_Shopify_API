@@ -88,7 +88,7 @@ namespace VSB_Shopify_API
 
                     sql_insert = sql_insert + "COMMIT; ";
 
-                   //insert_check = db.sqlInsert(sql_insert);
+                    //insert_check = db.sqlInsert(sql_insert);
 
                     if (insert_check != 0)
                     {
@@ -100,6 +100,55 @@ namespace VSB_Shopify_API
                 {
                     //Update status of order if required
                 }
+            }
+
+            db.close_connection();
+
+            return ret_obj;
+        }
+
+        public base_return process_products(List<product_template.products> product_list, string country_sw)
+        {
+            base_return ret_obj = new base_return();
+            DbCode db = new DbCode();
+
+            string sql_check = "";
+            string sql_return = "";
+            string sql_insert = "";
+            int insert_check = 0;
+            //Set database connection
+            db.set_db_country(country_sw);
+
+            ret_obj.status = 0;
+            ret_obj.message = "success";
+            ret_obj.parm_extra = "";
+
+
+            foreach (var product_line in product_list)
+            {
+                foreach (var variant_line in product_line.variants)
+                {
+                    //clear scripts
+                    sql_insert = "";
+
+                    //Add Product to database
+                    sql_insert = "INSERT INTO shopify_datafeed(shopify_id, variant_id, item_id, item_type, entity_id, sku_no, barcode, isbn_number, weight, published, selling_price, online_price, availibility, dept_id, department, cat_id, product_group, contributor, title, edition, publisher, format, release_date, genre, modified, date_created, date_published, date_modified, date_sent, current_status, inventory_qty, inventory_qty_old)" +
+                    "ON EXISTING UPDATE VALUES('" + variant_line.product_id + "','" + variant_line.id + "',NULL,NULL,NULL,NULL,'" + variant_line.barcode + "',NULL,NULL,NULL," + variant_line.price + ",0.00,NULL,NULL,NULL,NULL,NULL,NULL," + variant_line.title + ",NULL,NULL,NULL,NULL,NULL,1,NULL,NULL,'" + DateTime.Now.ToString() + "',NULL,'" + product_line.status + "','" + variant_line.inventory_quantity + "',NULL); ";
+                }
+            }
+
+            sql_insert = sql_insert + "COMMIT; ";
+
+            insert_check = db.sqlInsert(sql_insert);
+
+            if (insert_check != 0)
+            {
+                //Audit Insert Script
+            }
+
+            if (sql_return == "1")
+            {
+                //Update status of order if required
             }
 
             db.close_connection();

@@ -169,6 +169,7 @@
     <Compile Include="Logic\ws_functions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Templates\orders_template.cs" />
+    <Compile Include="Templates\product_template.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Areas\HelpPage\HelpPage.css" />
