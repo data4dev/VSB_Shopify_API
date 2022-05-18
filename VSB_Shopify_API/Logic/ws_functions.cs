@@ -107,6 +107,27 @@ namespace VSB_Shopify_API
             return ret_obj;
         }
 
+        public void sync_shopify_datafeed_products(string country_sw)
+        {
+            base_return ret_obj = new base_return();
+            DbCode db = new DbCode();
+
+            string sql_check = "";
+            string sql_return = "";
+            string sql_insert = "";
+            int insert_check = 0;
+            //Set database connection
+            db.set_db_country(country_sw);
+
+            ret_obj.status = 0;
+            ret_obj.message = "success";
+            ret_obj.parm_extra = "";
+
+            sql_insert = "CALL sp_sync_shopify_items()";
+            sql_return = db.odbcSQLLookupValue(sql_insert);
+
+        }
+
         public base_return process_products(List<product_template.products> product_list, string country_sw)
         {
             base_return ret_obj = new base_return();
