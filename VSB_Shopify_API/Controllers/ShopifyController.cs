@@ -111,6 +111,8 @@ namespace VSB_Shopify_API
                 full_url = url + endpoint + access_token + extra_info + i;
                 ret_obj = wsf.get_webrequest(full_url);
 
+                string formated_json = ret_obj.message.Replace("null", "");
+
                 if (ret_obj.status == 0)
                 {
                     //Convert Json to list of orders
@@ -123,5 +125,63 @@ namespace VSB_Shopify_API
 
             return ret_obj;
         }
+
+
+        // Sync Products from Shopify
+        [System.Web.Http.Route("Add_Product/")]
+        public base_return POST([FromBody] product_template.products sp)
+        {
+            //Instatiate Variables
+            JsonResult json_return = new JsonResult();
+
+            string return_value = "Success";
+            string sql_script;
+            string sql_check;
+
+            string endpoint = "products.json";
+
+            //Build Count URL
+            string full_url = url + endpoint + access_token;
+
+            string json_body = "{" +
+                    "\"product\":{" +
+                    "\"title\":\"Rocco Test Item 4\"," +
+                    "\"body_html\":\"\u003cstrong\u003eTesting Items!\u003c\\/strong\u003e\"," +
+                    "\"vendor\":\"Dev\"," +
+                    "\"product_type\":\"Book\"," +
+                    "\"status\":\"draft\"," +
+                    "\"variants\":[" +
+                    "   {" +
+                    "   \"title\":\"Testing Items V1.0\"," +
+                    "   \"price\":\"1.30\"," +
+                    "   \"inventory_quantity\":\"5\"," +
+                    "   \"barcode\":\"Test1234\"" +
+                    "   }" +
+                    "]," +
+                    "\"image\":\"https://source.unsplash.com/oWTW-jNGl9I/600x800\"" +
+                    "          }" +
+                    "      }";
+
+            //Check amount of items
+            ret_obj = wsf.post_webrequest(full_url, json_body);
+
+            int product_count = 0;
+            int total_index = 0;
+            var product_counter = ret_obj.message.Substring(9, ret_obj.message.Length - 10);
+
+            try
+            {
+                product_count = int.Parse(product_counter);
+                total_index = product_count / 50;
+            }
+            catch (Exception ex)
+            {
+                //audit error
+            }
+
+            return ret_obj;
+        }
+
+
     }
 }

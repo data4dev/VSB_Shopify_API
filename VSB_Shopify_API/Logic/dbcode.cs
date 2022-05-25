@@ -246,5 +246,67 @@ namespace VSB_Shopify_API
 
 
         }
+
+        public int checkDBConnection()
+        {
+            //0 - Success
+            //-1 = Failed
+            try
+            {
+                OdbcConnection conn = new OdbcConnection();
+                conn.ConnectionString = gs_connString;
+                conn.Open();
+                conn.Close();
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                return -1;
+            }
+
+        }
+
+        public OdbcDataReader getShopifyDataFeedItems()
+        {
+            OdbcConnection conn = new OdbcConnection();
+            conn.ConnectionString = gs_connString;
+            conn.Open();
+
+            OdbcDataReader reader;
+
+            string sql = "CALL \"DBA\".\"sp_datafeed_get_items\"()";
+
+            //read
+            using (OdbcCommand com = new OdbcCommand(sql, conn))
+            {
+                com.CommandTimeout = 360;
+                reader = com.ExecuteReader();
+
+            }
+            conn.Close();
+
+            //return
+            return reader;
+        }
+
+        public DataTable getShopifyDataFeedItemsDataTable()
+        {
+            string sql = "CALL \"DBA\".\"sp_shopify_datafeed_get_items\"()";
+
+            DataTable dt = new DataTable();
+            using (OdbcConnection connection =
+                        new OdbcConnection(gs_connString))
+            {
+                using (OdbcDataAdapter adapter =
+                        new OdbcDataAdapter(sql, connection))
+                {
+                    connection.ConnectionTimeout = 3600;
+                    connection.Open();
+                    adapter.Fill(dt);
+                    return dt;
+                }
+            }
+
+        }
     }
 }

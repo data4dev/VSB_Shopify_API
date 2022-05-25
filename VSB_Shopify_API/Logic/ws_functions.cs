@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
+using System.Data.Odbc;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Text;
 using System.Web;
 
 namespace VSB_Shopify_API
@@ -38,6 +41,98 @@ namespace VSB_Shopify_API
                 ret_obj.status = -999;
                 ret_obj.message = ex.Message.ToString();
                 ret_obj.parm_extra = "Error getting information from shopify.";
+                return ret_obj;
+            }
+
+            ret_obj.message = json_server_response;
+
+            return ret_obj;
+        }
+
+        public base_return post_webrequest(string full_url, string request_body)
+        {
+            base_return ret_obj = new base_return();
+            string json_server_response = "";
+
+            ret_obj.status = 0;
+            ret_obj.message = "";
+            ret_obj.parm_extra = "";
+
+            try
+
+            {
+                WebRequest request = WebRequest.Create(full_url);
+                request.Method = "POST";
+                string postData = request_body;
+                byte[] byteArray = Encoding.UTF8.GetBytes(postData);
+                request.ContentType = "application/json";
+                request.ContentLength = byteArray.Length;
+                Stream dataStream = request.GetRequestStream();
+                dataStream.Write(byteArray, 0, byteArray.Length);
+                dataStream.Close();
+                WebResponse response1 = request.GetResponse();
+                Console.WriteLine(((HttpWebResponse)response1).StatusDescription);
+                dataStream = response1.GetResponseStream();
+                StreamReader reader = new StreamReader(dataStream);
+                string responseFromServer = reader.ReadToEnd();
+                Console.WriteLine(responseFromServer);
+                reader.Close();
+                dataStream.Close();
+                response1.Close();
+
+                json_server_response = responseFromServer;
+            }
+            catch (Exception ex)
+            {
+                ret_obj.status = -999;
+                ret_obj.message = ex.Message.ToString();
+                ret_obj.parm_extra = "Error Adding information to shopify.";
+                return ret_obj;
+            }
+
+            ret_obj.message = json_server_response;
+
+            return ret_obj;
+        }
+
+        public base_return put_webrequest(string full_url, string request_body)
+        {
+            base_return ret_obj = new base_return();
+            string json_server_response = "";
+
+            ret_obj.status = 0;
+            ret_obj.message = "";
+            ret_obj.parm_extra = "";
+
+            try
+
+            {
+                WebRequest request = WebRequest.Create(full_url);
+                request.Method = "PUT";
+                string postData = request_body;
+                byte[] byteArray = Encoding.UTF8.GetBytes(postData);
+                request.ContentType = "application/json";
+                request.ContentLength = byteArray.Length;
+                Stream dataStream = request.GetRequestStream();
+                dataStream.Write(byteArray, 0, byteArray.Length);
+                dataStream.Close();
+                WebResponse response1 = request.GetResponse();
+                Console.WriteLine(((HttpWebResponse)response1).StatusDescription);
+                dataStream = response1.GetResponseStream();
+                StreamReader reader = new StreamReader(dataStream);
+                string responseFromServer = reader.ReadToEnd();
+                Console.WriteLine(responseFromServer);
+                reader.Close();
+                dataStream.Close();
+                response1.Close();
+
+                json_server_response = responseFromServer;
+            }
+            catch (Exception ex)
+            {
+                ret_obj.status = -999;
+                ret_obj.message = ex.Message.ToString();
+                ret_obj.parm_extra = "Error updating information to shopify.";
                 return ret_obj;
             }
 
@@ -152,6 +247,70 @@ namespace VSB_Shopify_API
             }
 
             db.close_connection();
+
+            return ret_obj;
+        }
+
+
+
+        public base_return update_products(List<product_template.products> product_list, string country_sw)
+        {
+            base_return ret_obj = new base_return();
+
+            DbCode dbInt = new DbCode();
+            DataTable dt;
+            OdbcDataReader dr_shopify_items;
+
+            ret_obj.status = 0;
+            ret_obj.message = "";
+            ret_obj.parm_extra = "";
+
+            dbInt.set_db_country(country_sw);
+
+            //check if database connection is active
+            int db_active = dbInt.checkDBConnection();
+            if (db_active == -1)
+            {
+                ret_obj.status = -999;
+                ret_obj.message = "Error Connection to database";
+            }
+
+            dr_shopify_items = dbInt.getShopifyDataFeedItems();
+
+            try
+            {
+                //loop through the rows
+                while (dr_shopify_items.Read())
+                {
+                    string ls_type = dr_shopify_items["item_type"].ToString();
+                    string ls_department = dr_shopify_items["dept_id"].ToString();
+                    string ls_availibility = dr_shopify_items["availibility"].ToString();
+                    string ls_published = dr_shopify_items["published"].ToString();
+                    string ls_item_id = dr_shopify_items["item_id"].ToString();
+                    string ls_isbn_number = dr_shopify_items["isbn_number"].ToString();
+                    string ls_title = dr_shopify_items["title"].ToString();
+                    string ls_barcode = dr_shopify_items["barcode"].ToString();
+                    string ls_weight = dr_shopify_items["weight"].ToString();
+                    double ld_price = double.Parse(dr_shopify_items["selling_price"].ToString());
+                    string ls_contributor = dr_shopify_items["contributor"].ToString();
+                    string ls_edition = dr_shopify_items["edition"].ToString();
+                    string ls_publisher = dr_shopify_items["publisher"].ToString();
+                    string ls_category = dr_shopify_items["cat_id"].ToString();
+
+                }
+            }
+            catch (Exception ex)
+            {
+                ret_obj.status = -1;
+                ret_obj.message = "";
+                ret_obj.parm_extra = "";
+            }
+
+
+
+
+
+            dbInt.close_connection();
 
             return ret_obj;
         }
