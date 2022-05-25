@@ -18,6 +18,7 @@ namespace VSB_Shopify_API
         //Get Webservice and Country type from webconfig file.
         string ws_type = ConfigurationManager.AppSettings["WSTYPE"];
         string country_sw = ConfigurationManager.AppSettings["COUNTRY_SW"];
+        string status_type = ConfigurationManager.AppSettings["CREATE_TYPE"];
         string access_token = "?access_token=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";
         string url = "https://up-bookmarks.myshopify.com/admin/api/2022-04/";
 
@@ -73,58 +74,56 @@ namespace VSB_Shopify_API
         public base_return POST_Products()
         {
             //Instatiate Variables
-            List<product_template.products> item_details = new List<product_template.products>();
+            //List<product_template.products> item_details = new List<product_template.products>();
             JsonResult json_return = new JsonResult();
 
             //Sync shopify_datafeed with any new items that pass validation rules
             wsf.sync_shopify_datafeed_products(country_sw);
 
-            string return_value = "Success";
-            string sql_script;
-            string sql_check;
+            //process synced products
+            ret_obj = wsf.process_products(country_sw,url,access_token, status_type);
 
-            string endpoint = "products.json";
-            string count_endpoint = "products/count.json";
-            string extra_info = "&index=";
+            //string endpoint = "products.json";
+            //string count_endpoint = "products/count.json";
+            //string extra_info = "&index=";
 
-            //Build Count URL
-            string full_url = url + count_endpoint + access_token;
+            ////Build Count URL
+            //string full_url = url + count_endpoint + access_token;
 
-            //Check amount of items
-            ret_obj = wsf.get_webrequest(full_url);
+            ////Check amount of items
+            //ret_obj = wsf.get_webrequest(full_url);
 
-            int product_count = 0;
-            int total_index = 0;
-            var product_counter = ret_obj.message.Substring(9, ret_obj.message.Length - 10);
+            //int product_count = 0;
+            //int total_index = 0;
+            //var product_counter = ret_obj.message.Substring(9, ret_obj.message.Length - 10);
 
-            try
-            {
-                product_count = int.Parse(product_counter);
-                total_index = product_count / 50;
-            }
-            catch (Exception ex)
-            {
-                //audit error
-            }
+            //try
+            //{
+            //    product_count = int.Parse(product_counter);
+            //    total_index = product_count / 50;
+            //}
+            //catch (Exception ex)
+            //{
+            //    //audit error
+            //}
 
-            //build index amount
-            for (int i = 0; i < total_index; i++)
-            {
-                //Build Count URL
-                full_url = url + endpoint + access_token + extra_info + i;
-                ret_obj = wsf.get_webrequest(full_url);
+            ////build index amount
+            //for (int i = 0; i < total_index; i++)
+            //{
+            //    //Build Count URL
+            //    full_url = url + endpoint + access_token + extra_info + i;
+            //    ret_obj = wsf.get_webrequest(full_url);
 
-                string formated_json = ret_obj.message.Replace("null", "");
+            //    string formated_json = ret_obj.message.Replace("null", "");
 
-                if (ret_obj.status == 0)
-                {
-                    //Convert Json to list of orders
-                    item_details = JsonConvert.DeserializeObject<product_template.RootObject>(ret_obj.message).product_list.ToList();
-                }
+            //    if (ret_obj.status == 0)
+            //    {
+            //        //Convert Json to list of orders
+            //        item_details = JsonConvert.DeserializeObject<product_template.RootObject>(ret_obj.message).product_list.ToList();
+            //    }
 
-                //process products in batches
-                ret_obj = wsf.process_products(item_details, country_sw);
-            }
+          
+            //}
 
             return ret_obj;
         }
