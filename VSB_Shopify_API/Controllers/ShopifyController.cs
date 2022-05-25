@@ -76,6 +76,9 @@ namespace VSB_Shopify_API
             List<product_template.products> item_details = new List<product_template.products>();
             JsonResult json_return = new JsonResult();
 
+            //Sync shopify_datafeed with any new items that pass validation rules
+            wsf.sync_shopify_datafeed_products(country_sw);
+
             string return_value = "Success";
             string sql_script;
             string sql_check;
