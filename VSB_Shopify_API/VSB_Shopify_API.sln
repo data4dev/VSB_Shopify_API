@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30128.74
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VSB_Shopify_API", "VSB_Shopify_API.csproj", "{3A4CE00A-DF8D-4C06-A2FE-1488576CAFBF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VSB_Shopify_API.Tests", "..\VSB_Shopify_API.Tests\VSB_Shopify_API.Tests.csproj", "{CBBDC117-11A7-4DB5-910E-85FBD4AC7EE7}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3A4CE00A-DF8D-4C06-A2FE-1488576CAFBF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3A4CE00A-DF8D-4C06-A2FE-1488576CAFBF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3A4CE00A-DF8D-4C06-A2FE-1488576CAFBF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3A4CE00A-DF8D-4C06-A2FE-1488576CAFBF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CBBDC117-11A7-4DB5-910E-85FBD4AC7EE7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CBBDC117-11A7-4DB5-910E-85FBD4AC7EE7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CBBDC117-11A7-4DB5-910E-85FBD4AC7EE7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CBBDC117-11A7-4DB5-910E-85FBD4AC7EE7}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {8C518001-C64A-4C3D-ACB0-2E37168FD3A0}
+	EndGlobalSection
+EndGlobal
