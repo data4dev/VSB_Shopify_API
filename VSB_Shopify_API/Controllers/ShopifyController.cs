@@ -121,13 +121,10 @@ namespace VSB_Shopify_API
             //        //Convert Json to list of orders
             //        item_details = JsonConvert.DeserializeObject<product_template.RootObject>(ret_obj.message).product_list.ToList();
             //    }
-
-          
             //}
 
             return ret_obj;
         }
-
 
         // Sync Products from Shopify
         [System.Web.Http.Route("Add_Product/")]

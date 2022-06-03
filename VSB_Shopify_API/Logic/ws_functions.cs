@@ -325,6 +325,8 @@ namespace VSB_Shopify_API
 
             db.close_connection();
 
+            ret_obj.parm_extra = "";
+
             return ret_obj;
         }
 
