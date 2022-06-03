@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Odbc;
@@ -225,8 +226,11 @@ namespace VSB_Shopify_API
 
         }
 
-        public base_return process_products(string country_sw, string url, string access_token, string status)
+        public base_return process_products(string country_sw, string url, string access_token, string status, string post_sw)
         {
+            //live_sw = 1 :Send to Shopify
+            //Live_sw = 0 :Audit Only
+
             base_return ret_obj = new base_return();
             DbCode db = new DbCode();
 
@@ -251,57 +255,72 @@ namespace VSB_Shopify_API
                 string item_id = data_line["item_id"].ToString();
                 string shopify_id = data_line["shopify_id"].ToString();
                 string variant_id = data_line["variant_id"].ToString();
+                string title = data_line["title"].ToString();
+                string inventory_qty = data_line["inventory_qty"].ToString();
+                string isbn_number = data_line["isbn_number"].ToString();
+                string inventory_price = data_line["selling_price"].ToString();
+                string item_status = data_line["current_status"].ToString();
 
                 //Insert New Item into shoppify
                 if (action_type == "1")
                 {
-                    insert_products(data_line, url, access_token, status, country_sw);
+                    ret_obj = insert_products(data_line, url, access_token, status, country_sw, post_sw);
 
-                    string new_shopify_id = "123";
-                    string new_variant_id = "123";
-
-                    sql_insert = "UPDATE shopify_datafeed " +
-                    "SET shopify_id = '"+ new_shopify_id + "' " +
-                    ", variant_id = '"+ new_variant_id + "' " +
-                    ", modified = 0 " +
-                    ", date_modified = now() " +
-                    "WHERE shopify_id = '" + shopify_id + "' " +
-                    "AND variant_id = '" + variant_id + "' " +
-                    "AND item_id = '" + item_id + "' ";
-
-                    sql_insert = sql_insert + "COMMIT; ";
-                    insert_check = db.sqlInsert(sql_insert);
+                    if (ret_obj.status == 0)
+                    {
+                        audit_api(country_sw, "Insert Shopify Item", ret_obj.status.ToString(), "Success", ret_obj.parm_extra, ret_obj.message);
+                    }
+                    else
+                    {
+                        audit_api(country_sw, "Error: Insert Shopify Item", ret_obj.status.ToString(),"Failed", ret_obj.parm_extra, ret_obj.message);
+                    }
                 }
 
                 //Update Current Item into shoppify
                 if (action_type == "2")
                 {
+                    product_template.products line_update = new product_template.products();
+                    line_update.id = int.Parse(shopify_id);
+                    line_update.title = title;
+                    line_update.body_html = title;
+                    line_update.variants[1].product_id = int.Parse(shopify_id);
+                    line_update.variants[1].barcode = isbn_number;
+                    line_update.variants[1].barcode = isbn_number;
+                    line_update.variants[1].price = float.Parse(inventory_price);
+                    line_update.variants[1].inventory_quantity = int.Parse(inventory_qty);
 
+                    update_products(line_update, url, access_token, country_sw, post_sw);
 
+                    if (ret_obj.status == 0)
+                    {
+                        audit_api(country_sw, "Update Shopify Item", ret_obj.status.ToString(), "Success", ret_obj.parm_extra, ret_obj.message);
+
+                        if (post_sw == "YES")
+                        {
+                            sql_insert = "UPDATE shopify_datafeed " +
+                            "SET modified = 0 " +
+                            //" ,inventory_qty  = '" + inventory_qty + "' " +
+                            //" ,selling_price  = '" + inventory_price + "' " +
+                            ",date_modified = now() " +
+                            "WHERE shopify_id = '" + shopify_id + "' " +
+                            "AND variant_id = '" + variant_id + "' " +
+                            "AND item_id = '" + item_id + "'; ";
+
+                            sql_insert = sql_insert + "COMMIT; ";
+                            insert_check = db.sqlInsert(sql_insert);
+
+                            if (insert_check != 0)
+                            {
+                                //Audit Request
+                                audit_api(country_sw, "Error: Update shopify_datafeed", "0", "Failed", sql_insert, item_id);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        audit_api(country_sw, "Error: Update Shopify Item", ret_obj.status.ToString(), "Failed", ret_obj.parm_extra, ret_obj.message);
+                    }
                 }
-
-            }
-
-            //foreach (var product_line in product_list)
-            //{
-            //    foreach (var variant_line in product_line.variants)
-            //    {
-            //        //clear scripts
-            //        sql_insert = "";
-
-            //        //Add Product to database
-            //        sql_insert = "INSERT INTO shopify_datafeed(shopify_id, variant_id, item_id, item_type, entity_id, sku_no, barcode, isbn_number, weight, published, selling_price, online_price, availibility, dept_id, department, cat_id, product_group, contributor, title, edition, publisher, format, release_date, genre, modified, date_created, date_published, date_modified, date_sent, current_status, inventory_qty, inventory_qty_old)" +
-            //        "ON EXISTING UPDATE VALUES('" + variant_line.product_id + "','" + variant_line.id + "',NULL,NULL,NULL,NULL,'" + variant_line.barcode + "',NULL,NULL,NULL," + variant_line.price + ",0.00,NULL,NULL,NULL,NULL,NULL,NULL," + variant_line.title + ",NULL,NULL,NULL,NULL,NULL,1,NULL,NULL,'" + DateTime.Now.ToString() + "',NULL,'" + product_line.status + "','" + variant_line.inventory_quantity + "',NULL); ";
-            //    }
-            //}
-
-            sql_insert = sql_insert + "COMMIT; ";
-
-            insert_check = db.sqlInsert(sql_insert);
-
-            if (insert_check != 0)
-            {
-                //Audit Insert Script
             }
 
             db.close_connection();
@@ -309,16 +328,17 @@ namespace VSB_Shopify_API
             return ret_obj;
         }
 
-        public base_return update_products(List<product_template.products> product_list, string country_sw)
+        public base_return update_products(product_template.products product, string url, string access_token, string country_sw, string post_sw)
         {
+            ws_functions wsf = new ws_functions();
             base_return ret_obj = new base_return();
-
             DbCode dbInt = new DbCode();
             DataTable dt;
-            OdbcDataReader dr_shopify_items;
+
+            string endpoint = "products/" + product.id.ToString() + ".json";
 
             ret_obj.status = 0;
-            ret_obj.message = "";
+            ret_obj.message = "Success";
             ret_obj.parm_extra = "";
 
             dbInt.set_db_country(country_sw);
@@ -331,49 +351,60 @@ namespace VSB_Shopify_API
                 ret_obj.message = "Error Connection to database";
             }
 
-            dr_shopify_items = dbInt.getShopifyDataFeedItems();
+            //Build Count URL
+            string full_url = url + endpoint + access_token;
 
-            try
-            {
-                //loop through the rows
-                while (dr_shopify_items.Read())
-                {
-                    string ls_type = dr_shopify_items["item_type"].ToString();
-                    string ls_department = dr_shopify_items["dept_id"].ToString();
-                    string ls_availibility = dr_shopify_items["availibility"].ToString();
-                    string ls_published = dr_shopify_items["published"].ToString();
-                    string ls_item_id = dr_shopify_items["item_id"].ToString();
-                    string ls_isbn_number = dr_shopify_items["isbn_number"].ToString();
-                    string ls_title = dr_shopify_items["title"].ToString();
-                    string ls_barcode = dr_shopify_items["barcode"].ToString();
-                    string ls_weight = dr_shopify_items["weight"].ToString();
-                    double ld_price = double.Parse(dr_shopify_items["selling_price"].ToString());
-                    string ls_contributor = dr_shopify_items["contributor"].ToString();
-                    string ls_edition = dr_shopify_items["edition"].ToString();
-                    string ls_publisher = dr_shopify_items["publisher"].ToString();
-                    string ls_category = dr_shopify_items["cat_id"].ToString();
+            string json_body = "{" +
+                            "\"product\":{" +
+                                "\"id\": " + product.id + "," +
+                                "\"title\":\"" + product.title + "\"," +
+                                "\"body_html\":\"\u003cstrong\u003e" + product.title + "\u003c/strong\u003e\"," +
+                                "\"variants\":[" +
+                                    "{" +
+                                        "\"product_id\": " + product.variants[1].product_id + "," +
+                                        "\"price\":\"" + product.variants[1].price + "\"," +
+                                        "\"inventory_quantity\":" + product.variants[1].inventory_quantity + "," +
+                                        "\"barcode\":\"" + product.variants[1].barcode + "\" " +
+                                    " }" +
+                                " ]" +
+                                " }" +
+                            " }";
 
-                }
-            }
-            catch (Exception ex)
+            if (post_sw == "YES")
             {
-                ret_obj.status = -1;
-                ret_obj.message = "";
-                ret_obj.parm_extra = "";
+                //Check amount of items
+                ret_obj = wsf.put_webrequest(full_url, json_body);
             }
+
+            ret_obj.parm_extra = json_body;
 
             dbInt.close_connection();
 
             return ret_obj;
         }
 
-        public base_return insert_products(DataRow dr_shopify_items, string url, string access_token, string status, string country_sw)
+        public base_return insert_products(DataRow dr_shopify_items, string url, string access_token, string status, string country_sw, string post_sw)
         {
             //Instatiate Variables
             JsonResult json_return = new JsonResult();
             ws_functions wsf = new ws_functions();
             base_return ret_obj = new base_return();
-            string return_value = "Success";
+
+            DbCode db = new DbCode();
+            db.set_db_country(country_sw);
+
+            ret_obj.status = 0;
+            ret_obj.message = "Success";
+            ret_obj.parm_extra = "";
+
+            //check if database connection is active
+            int db_active = db.checkDBConnection();
+            if (db_active == -1)
+            {
+                ret_obj.status = -999;
+                ret_obj.message = "Error Connection to database";
+            }
+
             string endpoint = "products.json";
 
             string ls_type = dr_shopify_items["item_type"].ToString();
@@ -390,8 +421,10 @@ namespace VSB_Shopify_API
             string ls_edition = dr_shopify_items["edition"].ToString();
             string ls_publisher = dr_shopify_items["publisher"].ToString();
             string ls_category = dr_shopify_items["cat_id"].ToString();
+            string ls_inventory_qty = dr_shopify_items["inventory_qty"].ToString();
             string ls_description = "No Description";
             string ls_Image = "";
+
             if (status == "1")
             {
                 status = "draft";
@@ -408,15 +441,15 @@ namespace VSB_Shopify_API
             string json_body = "{" +
                     "\"product\":{" +
                     "\"title\":\"" + ls_title + "\"," +
-                    "\"body_html\":\"\u003cstrong\u003e" + ls_description + "\u003c\\/strong\u003e\"," +
-                    "\"vendor\":\"Dev\"," +
+                    "\"body_html\":\"\u003cstrong\u003e" + ls_description + "\u003c/strong\u003e\"," +
+                    "\"vendor\":\"" + ls_publisher + "\"," +
                     "\"product_type\":\"" + ls_type + "\"," +
                     "\"status\":\"" + status + "\"," +
                     "\"variants\":[" +
                     "   {" +
                     "   \"title\":\"" + ls_title + "\"," +
                     "   \"price\":\"" + ld_price + "\"," +
-                    "   \"inventory_quantity\":\"5\"," +
+                    "   \"inventory_quantity\":\"" + ls_inventory_qty + "\"," +
                     "   \"barcode\":\"" + ls_isbn_number + "\"" +
                     "   }" +
                     "]," +
@@ -424,30 +457,47 @@ namespace VSB_Shopify_API
                     "          }" +
                     "      }";
 
-            //Check amount of items
-            ret_obj = wsf.post_webrequest(full_url, json_body);
-
-            //Audit Request
-            audit_api(country_sw, "Insert Shopify Item", ret_obj.status.ToString(), ret_obj.message, json_body, ret_obj.message);
-
-            int product_count = 0;
-            int total_index = 0;
-            var product_counter = ret_obj.message.Substring(9, ret_obj.message.Length - 10);
-
-            try
+            if (post_sw == "YES")
             {
-                product_count = int.Parse(product_counter);
-                total_index = product_count / 50;
+                //Check amount of items
+                ret_obj = wsf.post_webrequest(full_url, json_body);
+
+                if (ret_obj.status == 0)
+                {
+                    try
+                    {
+                        string formated_json = ret_obj.message.Replace("null", "");
+                        //Convert Json to product class
+                        product_template.products product_details = JsonConvert.DeserializeObject<product_template.products>(formated_json);
+
+                        string sql_insert = "UPDATE shopify_datafeed " +
+                        "SET shopify_id = '" + product_details.id + "' " +
+                        ", variant_id = '" + product_details.variants[1].id + "' " +
+                        ", modified = 0 " +
+                        ", date_modified = now() " +
+                        "WHERE shopify_id = '0' " +
+                        "AND variant_id = '0' " +
+                        "AND item_id = '" + ls_item_id + "'; ";
+
+                        sql_insert = sql_insert + "COMMIT; ";
+                        int insert_check = db.sqlInsert(sql_insert);
+
+                        if (insert_check != 0)
+                        {
+                            //Audit Request
+                            audit_api(country_sw, "Error: Update shopify_datafeed", "0", "Failed", sql_insert, ls_item_id);
+                        }
+                    }
+                    catch (Exception)
+                    {
+                    }
+                }
             }
-            catch (Exception ex)
-            {
-                //audit error
-            }
+
+            ret_obj.parm_extra = json_body;
 
             return ret_obj;
         }
-
-
         public void audit_api(string country_sw, string api_function, string api_status, string api_message, string api_body, string api_response)
         {
             DbCode db = new DbCode();

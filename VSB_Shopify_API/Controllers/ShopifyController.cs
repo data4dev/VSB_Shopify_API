@@ -21,7 +21,7 @@ namespace VSB_Shopify_API
         string status_type = ConfigurationManager.AppSettings["CREATE_TYPE"];
         string access_token = "?access_token=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";
         string url = "https://up-bookmarks.myshopify.com/admin/api/2022-04/";
-
+        string post_sw = ConfigurationManager.AppSettings["SHOPIFY_POST"]; 
         ws_functions wsf = new ws_functions();
 
         DataTable dt = new DataTable();
@@ -81,7 +81,7 @@ namespace VSB_Shopify_API
             wsf.sync_shopify_datafeed_products(country_sw);
 
             //process synced products
-            ret_obj = wsf.process_products(country_sw,url,access_token, status_type);
+            ret_obj = wsf.process_products(country_sw,url,access_token, status_type, post_sw);
 
             //string endpoint = "products.json";
             //string count_endpoint = "products/count.json";
